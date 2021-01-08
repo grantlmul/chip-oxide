@@ -119,7 +119,6 @@ pub fn main() -> Result<(), String> {
 
     // screen is nice
     let mut screen: [[bool;64];32];
-
     // input stuff
     let mut keys_pressed: [bool;16];
     let mut instruction: u16;
@@ -142,9 +141,11 @@ pub fn main() -> Result<(), String> {
             dt-=1;
         }
         
-        instruction = ((memory[pc] as u16)<< 8)|memory[pc+2] as u16;
-        println!("instruction {:X} with {:#X}",instruction,(instruction&0xF000)>>12);
-        println!("pc: {}",pc);
+        //instruction = ((memory[pc] as u16)<< 8)|memory[pc+2] as u16;
+        // ^ old code that turned FF60 into FF15 somehow
+        
+        instruction = (memory[pc] as u16) << 8;
+        instruction|=memory[pc+1] as u16;
         match (instruction&0xF000)>>12 {
             0x0 => {
                 if get_nnn(&instruction) == 0x0E0 {
