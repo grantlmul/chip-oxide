@@ -83,7 +83,7 @@ pub fn main() -> Result<(), String> {
     // but neither just that or i am good enough to make endianness proper from
     // the start so do it now ig
     i=0x200;
-    let mut temp: u8;
+    /*let mut temp: u8;
     //basically combing through and swapping bytes
     while i < rom.len()+0x200 {
         temp=memory[i];
@@ -91,7 +91,7 @@ pub fn main() -> Result<(), String> {
         memory[i+1]=temp;
         i = i+2;
     }
-    println!("second");
+    println!("second");*/
     
     println!("");
     // V0-VF registers, the easy way
@@ -142,8 +142,8 @@ pub fn main() -> Result<(), String> {
         }
         
         //instruction = ((memory[pc] as u16)<< 8)|memory[pc+2] as u16;
-        // ^ old code that turned FF60 into FF15 somehow
-        
+        // ^ old code that turned FF60 into FF15 somehow and now nothing works
+
         instruction = (memory[pc] as u16) << 8;
         instruction|=memory[pc+1] as u16;
         match (instruction&0xF000)>>12 {
