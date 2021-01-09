@@ -207,6 +207,8 @@ pub fn main() -> Result<(), String> {
     // input stuff
     let mut keys_pressed: [bool;16];
     let mut instruction: u16;
+
+
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -218,10 +220,15 @@ pub fn main() -> Result<(), String> {
                 _ => {}
             }
         }
+        canvas.set_draw_color(Color::BLACK);
         canvas.clear();
         i = 0;
+        canvas.set_draw_color(Color::WHITE);
         for elem in screen.iter() {
-            
+            if *elem {
+                let _ = canvas.fill_rect(rect::Rect::new(((i as i32)%64)*10,((i as i32)/64)*10,10,10));
+            }
+            i+=1;
         }
         canvas.present();
         while dt > 0 {
@@ -294,7 +301,25 @@ pub fn main() -> Result<(), String> {
             },
             0xD => {
                 println!("DRW V{:X}, V{:X}, {:X}", get_x(&instruction), get_y(&instruction), get_n(&instruction));
-
+                let mut sprite: Vec<u8> = Vec::new();
+                i = 0;
+                while i < get_n(&instruction) {
+                    sprite.push(memory[(program_i+(i as u16)) as usize]);
+                    i+=1;
+                }
+                i = 0;
+                while i < sprite.len() {
+                    // thicc
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b10000000) == 0b10000000;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b01000000) == 0b01000000;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00100000) == 0b00100000;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00010000) == 0b00010000;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00001000) == 0b00001000;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000100) == 0b00000100;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000010) == 0b00000010;
+                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000001) == 0b00000001;
+                    i+=1;
+                }
             },
             0xE => {
                 
