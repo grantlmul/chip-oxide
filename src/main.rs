@@ -15,6 +15,10 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use std::time::Duration;
 use sdl2::keyboard::Scancode;
+use sdl2::pixels;
+use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::gfx::primitives;
+use sdl2::rect;
 
 // i swear to god if rustc doesnt inline these
 fn get_nnn(instruction :&u16) -> usize {
@@ -56,13 +60,94 @@ pub fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
     // Memory seems important, Wikipedia says 4k is a nice size, let's do it.
     let mut memory: [u8; 0x1000] = [0; 0x1000];
-    // shove some characters in memory
-    memory[0] = {
-        0xF0;0x90;0x90;0x90;0xF0;//0
-        0x20;0x60;0x20;0x20;0x70;//1
-        0xF0;0x10;0xF0;0x80;0xF0;//2
-        0xF0;0x10;0xF0;0x10;0xF0
-    };
+    // shove sprites in memory
+    let mut i: usize = 0;
+    let chr_rom = [
+        0b11110000 as u8,//0
+        0b10010000 as u8,
+        0b10010000 as u8,
+        0b10010000 as u8,
+        0b11110000 as u8,
+        0b11100000 as u8,//1
+        0b00100000 as u8,
+        0b00100000 as u8,
+        0b00100000 as u8,
+        0b11110000 as u8,
+        0b01100000 as u8,//2
+        0b10010000 as u8,
+        0b00110000 as u8,
+        0b01100000 as u8,
+        0b11110000 as u8,
+        0b11110000 as u8,//3
+        0b00010000 as u8,
+        0b01110000 as u8,
+        0b00010000 as u8,
+        0b11110000 as u8,
+        0b10010000 as u8,//4
+        0b10010000 as u8,
+        0b11110000 as u8,
+        0b00010000 as u8,
+        0b00010000 as u8,
+        0b11110000 as u8,//5
+        0b10000000 as u8,
+        0b11110000 as u8,
+        0b00010000 as u8,
+        0b11110000 as u8,
+        0b01110000 as u8,//6
+        0b10000000 as u8,
+        0b11100000 as u8,
+        0b10010000 as u8,
+        0b01100000 as u8,
+        0b11110000 as u8,//7
+        0b00010000 as u8,
+        0b00010000 as u8,
+        0b00100000 as u8,
+        0b00100000 as u8,
+        0b01100000 as u8,//8
+        0b10010000 as u8,
+        0b01100000 as u8,
+        0b10010000 as u8,
+        0b01100000 as u8,
+        0b01110000 as u8,//9
+        0b10010000 as u8,
+        0b01110000 as u8,
+        0b00010000 as u8,
+        0b00010000 as u8,
+        0b01100000 as u8,//A
+        0b10010000 as u8,
+        0b11110000 as u8,
+        0b10010000 as u8,
+        0b10010000 as u8,
+        0b11100000 as u8,//B
+        0b10010000 as u8,
+        0b11100000 as u8,
+        0b10010000 as u8,
+        0b11100000 as u8,
+        0b01110000 as u8,//C
+        0b10000000 as u8,
+        0b10000000 as u8,
+        0b10000000 as u8,
+        0b01110000 as u8,
+        0b11100000 as u8,//D
+        0b10010000 as u8,
+        0b10010000 as u8,
+        0b10010000 as u8,
+        0b11100000 as u8,
+        0b11110000 as u8,//E
+        0b10000000 as u8,
+        0b11100000 as u8,
+        0b10000000 as u8,
+        0b11110000 as u8,
+        0b11110000 as u8,//F
+        0b10000000 as u8,
+        0b11100000 as u8,
+        0b10000000 as u8,
+        0b10000000 as u8,
+    ];
+    for elem in chr_rom.iter() {
+        memory[i] = *elem;
+        i+=1;
+    }
     // throw in the rom while we're at it
     // time to make thing work: 2 days from 2020/01/05 (and counting?)
     let mut rom: Vec<u8> = Vec::new();
@@ -70,7 +155,7 @@ pub fn main() -> Result<(), String> {
         let mut rom_file = File::open(&args[1]).unwrap();
         let _ = rom_file.read_to_end(&mut rom);
     }
-    let mut i: usize = 0x200;
+    i = 0x200;
     // putting it in memory...
     for byte in &rom {
         memory[i] = *byte;
@@ -118,7 +203,7 @@ pub fn main() -> Result<(), String> {
     let mut dumptruck: usize = 0;
 
     // screen is nice
-    let mut screen: [[bool;64];32];
+    let mut screen: [bool;64*32] = [false;64*32];
     // input stuff
     let mut keys_pressed: [bool;16];
     let mut instruction: u16;
@@ -134,10 +219,13 @@ pub fn main() -> Result<(), String> {
             }
         }
         canvas.clear();
+        i = 0;
+        for elem in screen.iter() {
+            
+        }
         canvas.present();
         while dt > 0 {
             thread::sleep(Duration::new(1 / 60, 0));
-            println!("dt {}", dt);
             dt-=1;
         }
         
@@ -146,13 +234,14 @@ pub fn main() -> Result<(), String> {
 
         instruction = (memory[pc] as u16) << 8;
         instruction|=memory[pc+1] as u16;
+        print!("Execution {:04x}: ",instruction);
         match (instruction&0xF000)>>12 {
             0x0 => {
                 if get_nnn(&instruction) == 0x0E0 {
-                    println!("Execution: CLS");
-                    screen = [[false;64];32];
+                    println!("CLS");
+                    screen = [false;64*32];
                 } else if get_nnn(&instruction) == 0x0EE {
-                    println!("Execution: RET");
+                    println!("RET");
                     pc = stack[sp];
                     sp-=1;
                 } else {
@@ -161,18 +250,18 @@ pub fn main() -> Result<(), String> {
                 }
             },
             0x1 => {
-                println!("Execution: JP {:#X}", get_nnn(&instruction));
+                println!("JP {:#X}", get_nnn(&instruction));
                 pc = get_nnn(&instruction);
             },
             0x2 => {
-                println!("Execution: CALL {:#X}", get_nnn(&instruction));
+                println!("CALL {:#X}", get_nnn(&instruction));
                 sp+=1;
                 stack[sp] = pc;
 
                 pc = get_nnn(&instruction);
             },
             0x3 => {
-                println!("Execution: SE V{}, {:#X}",get_x(&instruction),get_nn(&instruction));
+                println!("SE V{:X}, {:#02X}",get_x(&instruction),get_nn(&instruction));
                 
             },
             0x4 => {
@@ -182,7 +271,8 @@ pub fn main() -> Result<(), String> {
                 
             },
             0x6 => {
-                
+                println!("LD V{:X}, {:#02X}",get_x(&instruction),get_nn(&instruction));
+                registers[get_x(&instruction)] = get_nn(&instruction) as u8;
             },
             0x7 => {
                 
@@ -203,7 +293,8 @@ pub fn main() -> Result<(), String> {
                 
             },
             0xD => {
-                
+                println!("DRW V{:X}, V{:X}, {:X}", get_x(&instruction), get_y(&instruction), get_n(&instruction));
+
             },
             0xE => {
                 
@@ -211,17 +302,21 @@ pub fn main() -> Result<(), String> {
             0xF => {
                 match get_nn(&instruction) {
                     0x15 => {
-                        println!("Execution: LD DT, V{}",registers[get_x(&instruction)]);
+                        println!("LD DT, V{:x}",get_x(&instruction));
                         dt = registers[get_x(&instruction)];
                     },
                     0x18 => {
-                        println!("Execution: LD ST, V{}",registers[get_x(&instruction)]);
+                        println!("LD ST, V{:x}",get_x(&instruction));
                         st = registers[get_x(&instruction)];
                     },
                     0x1E => {
-                        println!("Execution: ADD I, V{}",registers[get_x(&instruction)]);
+                        println!("ADD I, V{:x}",get_x(&instruction));
                         program_i += registers[get_x(&instruction)] as u16;
                     },
+                    0x29 => {
+                        println!("LD I, V{:x}", get_x(&instruction));
+                        program_i = (registers[get_x(&instruction)]*5) as u16;
+                    }
                     _ => {
                         println!("FATAL: Unknown instruction {:X}",instruction);
                         break 'running;
