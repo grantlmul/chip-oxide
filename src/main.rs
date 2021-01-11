@@ -270,7 +270,7 @@ pub fn main() -> Result<(), String> {
             },
             0x1 => {
                 println!("JP {:#X}", get_nnn(&instruction) - 0x200);
-                pc = get_nnn(&instruction);
+                pc = get_nnn(&instruction) as usize;
             },
             0x2 => {
                 println!("CALL {:#X}", get_nnn(&instruction));
@@ -294,7 +294,8 @@ pub fn main() -> Result<(), String> {
                 registers[get_x(&instruction)] = get_nn(&instruction) as u8;
             },
             0x7 => {
-                
+                println!("ADD V{:X}, {:#02X}",get_x(&instruction),get_nn(&instruction));
+                registers[get_x(&instruction)] += get_nn(&instruction) as u8;
             },
             0x8 => {
                 
@@ -303,7 +304,8 @@ pub fn main() -> Result<(), String> {
                 
             },
             0xA => {
-                
+                println!("LD I, {:#03X}",get_nnn(&instruction));
+                program_i = get_nnn(&instruction) as u16;
             },
             0xB => {
                 
