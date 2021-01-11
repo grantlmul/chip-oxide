@@ -37,6 +37,18 @@ fn get_y(instruction :&u16) -> usize {
     return ((instruction&0x00F0)>>4).into();
 }
 
+// condensing a few lines
+fn xor_to_screen(screen: &mut [bool; 32*64], x: usize, y: usize, xor: u8) {
+    screen[(x+(y*64))]   ^= (xor&0b10000000)==0b10000000;
+    screen[(x+(y*64))+1] ^= (xor&0b01000000)==0b01000000;
+    screen[(x+(y*64))+2] ^= (xor&0b00100000)==0b00100000;
+    screen[(x+(y*64))+3] ^= (xor&0b00010000)==0b00010000;
+    screen[(x+(y*64))+4] ^= (xor&0b00001000)==0b00001000;
+    screen[(x+(y*64))+5] ^= (xor&0b00000100)==0b00000100;
+    screen[(x+(y*64))+6] ^= (xor&0b00000010)==0b00000010;
+    screen[(x+(y*64))+7] ^= (xor&0b00000001)==0b00000001;
+}
+
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -241,7 +253,7 @@ pub fn main() -> Result<(), String> {
 
         instruction = (memory[pc] as u16) << 8;
         instruction|=memory[pc+1] as u16;
-        print!("Execution {:04x}: ",instruction);
+        print!("Execution {:04x} at {:04x}: ",instruction, pc-0x200);
         match (instruction&0xF000)>>12 {
             0x0 => {
                 if get_nnn(&instruction) == 0x0E0 {
@@ -309,15 +321,8 @@ pub fn main() -> Result<(), String> {
                 }
                 i = 0;
                 while i < sprite.len() {
-                    // thicc
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b10000000) == 0b10000000;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b01000000) == 0b01000000;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00100000) == 0b00100000;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00010000) == 0b00010000;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00001000) == 0b00001000;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000100) == 0b00000100;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000010) == 0b00000010;
-                    screen[((registers[get_x(&instruction)]+(registers[get_y(&instruction)]*64)) as usize)+i]^=(sprite[i]&0b00000001) == 0b00000001;
+                    // thicc-to-not
+                    xor_to_screen(&mut screen, get_x(&instruction),get_y(&instruction),get_n(&instruction) as u8);
                     i+=1;
                 }
             },
