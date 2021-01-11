@@ -269,7 +269,7 @@ pub fn main() -> Result<(), String> {
                 }
             },
             0x1 => {
-                println!("JP {:#X}", get_nnn(&instruction));
+                println!("JP {:#X}", get_nnn(&instruction) - 0x200);
                 pc = get_nnn(&instruction);
             },
             0x2 => {
