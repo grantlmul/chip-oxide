@@ -171,7 +171,7 @@ pub fn main() -> Result<(), String> {
     // putting it in memory...
     for byte in &rom {
         memory[i] = *byte;
-        i=i+1;
+        i+=1;
     }
     println!("\nfirst");
     let rom_size = i;
@@ -262,6 +262,7 @@ pub fn main() -> Result<(), String> {
                 } else if get_nnn(&instruction) == 0x0EE {
                     println!("RET");
                     pc = stack[sp];
+                    pc-=2;
                     sp-=1;
                 } else {
                     println!("FATAL: Invalid instruction {:X}",instruction);
@@ -271,6 +272,7 @@ pub fn main() -> Result<(), String> {
             0x1 => {
                 println!("JP {:#X}", get_nnn(&instruction) - 0x200);
                 pc = get_nnn(&instruction) as usize;
+                pc-=2;
             },
             0x2 => {
                 println!("CALL {:#X}", get_nnn(&instruction));
@@ -278,6 +280,7 @@ pub fn main() -> Result<(), String> {
                 stack[sp] = pc;
 
                 pc = get_nnn(&instruction);
+                pc-=2;
             },
             0x3 => {
                 println!("SE V{:X}, {:#02X}",get_x(&instruction),get_nn(&instruction));
